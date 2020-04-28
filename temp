@@ -1,0 +1,29 @@
+def find_dispatch(price, bid, plant_size, dispatchPrice):
+    dfALL.loc[(price > bid), dispatchPrice] = plant_size
+    dfALL.loc[(price <= bid), dispatchPrice] = 0
+
+def find_price(price, bid, dispatchPrice):
+    dfALL.loc[(price > bid), dispatchPrice] = price
+    dfALL.loc[(price <= bid), dispatchPrice] = 0
+
+def profit(price, bid, dispatchPrice):
+    dfALL.loc[(price > bid), dispatchPrice] = price - bid
+    dfALL.loc[(price <= bid), dispatchPrice] = 0
+
+#%%
+
+dfALL = pd.read_csv("./AEMOData/20125minuteDataSA.csv", index_col='SETTLEMENTDATE')
+
+dfALL = dfALL.loc[~dfALL.index.duplicated(keep='first')]
+dfALL.index = pd.to_datetime(dfALL.index)
+dfALL = dfALL.reset_index()
+
+thirtymindf = dfALL.set_index('SETTLEMENTDATE').resample('30T').mean()
+thirtymindf = thirtymindf.reset_index()
+
+dfALL['SETTLEMENTDATE'] = dfALL["SETTLEMENTDATE"].apply(pd.Timestamp.to_pydatetime)
+
+dfALL['flooredtimes'] = dfALL['SETTLEMENTDATE'].apply(lambda row: floor_ft(row.to_pydatetime(), timedelta(minutes=30)))
+
+dfALL['30minprices'] = dfALL['flooredtimes'].apply(lambda time: thirtymindf['RRP'][(thirtymindf['SETTLEMENTDATE'] == time)].values[0])
+
